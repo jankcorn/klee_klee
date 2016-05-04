@@ -25,6 +25,7 @@
 #else
 #include "llvm/Support/TargetRegistry.h"
 #endif
+#include "llvm/Target/TargetSubtargetInfo.h"
 
 using namespace llvm;
 using namespace klee;
@@ -49,6 +50,8 @@ bool RaiseAsmPass::runOnInstruction(Module &M, Instruction *I) {
   if (CallInst *ci = dyn_cast<CallInst>(I)) {
     if (InlineAsm *ia = dyn_cast<InlineAsm>(ci->getCalledValue())) {
       (void) ia;
+      Function *F = I->getParent()->getParent();
+      TLI = TM->getSubtargetImpl(*F)->getTargetLowering();
       return TLI && TLI->ExpandInlineAsm(ci);
     }
   }
@@ -66,7 +69,7 @@ bool RaiseAsmPass::runOnModule(Module &M) {
   std::string HostTriple = llvm::sys::getHostTriple();
 #endif
   const Target *NativeTarget = TargetRegistry::lookupTarget(HostTriple, Err);
-  TargetMachine * TM = 0;
+  //TargetMachine * TM = 0;
   if (NativeTarget == 0) {
     llvm::errs() << "Warning: unable to select native target: " << Err << "\n";
     TLI = 0;
@@ -79,7 +82,6 @@ bool RaiseAsmPass::runOnModule(Module &M) {
 #else
     TM = NativeTarget->createTargetMachine(HostTriple, "");
 #endif
-printf("[%s:%d] NOLOWERING\n", __FUNCTION__, __LINE__);
     //TLI = TM->getTargetLowering();
   }
   

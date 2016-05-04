@@ -44,6 +44,7 @@ namespace klee {
 class RaiseAsmPass : public llvm::ModulePass {
   static char ID;
 
+  const llvm::TargetMachine *TM;
   const llvm::TargetLowering *TLI;
 
   llvm::Function *getIntrinsic(llvm::Module &M,
