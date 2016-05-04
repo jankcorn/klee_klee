@@ -1618,16 +1618,17 @@ $(ObjDir)/%.s: %.m $(ObjDir)/.dir $(BUILT_SOURCES)
 	$(Compile.C) $< -o $@ -S
 
 
+#STD_COMPILE_OPTS = -std-compile-opts
 # make the C and C++ compilers strip debug info out of bytecode libraries.
 ifdef DEBUG_RUNTIME
 $(ObjectsBC): $(ObjDir)/%.bc: $(ObjDir)/%.ll $(LLVMAS) $(LOPT)
 	$(Echo) "Compiling $*.ll to $*.bc for $(BuildMode) build (bytecode)"
-	$(Verb) $(LLVMAS) $< -o - | $(LOPT) -std-compile-opts -o $@
+	$(Verb) $(LLVMAS) $< -o - | $(LOPT) $(STD_COMPILE_OPTS) -o $@
 else
 $(ObjectsBC): $(ObjDir)/%.bc: $(ObjDir)/%.ll $(LLVMAS) $(LOPT)
 	$(Echo) "Compiling $*.ll to $*.bc for $(BuildMode) build (bytecode)"
 	$(Verb) $(LLVMAS) $< -o - | \
-	   $(LOPT) -std-compile-opts -strip-debug -o $@
+	   $(LOPT) $(STD_COMPILE_OPTS) -strip-debug -o $@
 endif
 
 

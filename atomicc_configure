@@ -2,13 +2,8 @@
 set -e
 set -x
 #git checkout remotes/origin/master -b atomicc1
-#./configure --with-llvmsrc=../llvm
-CXX=clang++ ./configure --with-stp=`pwd`/../stp/build \
+
+CC=clang CXX=clang++ ./configure --with-stp=`pwd`/../stp/build \
   --with-llvmsrc=`pwd`/../llvm \
   --with-llvmobj=`pwd`/../llvm/build \
   --enable-posix-runtime
-
-echo \
-  --with-uclibc=`pwd`/../klee-uclibc \
-  --with-llvmcc=`pwd`/../llvm/Release+Asserts/bin/clang \
-  --with-llvmcxx=`pwd`/../llvm/Release+Asserts/bin/clang++ \

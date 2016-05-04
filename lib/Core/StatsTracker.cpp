@@ -164,7 +164,7 @@ static bool instructionIsCoverable(Instruction *i) {
     } else {
       Instruction *prev = --it;
       if (isa<CallInst>(prev) || isa<InvokeInst>(prev)) {
-        Function *target = getDirectCallTarget(prev);
+        Function *target = getDirectCallTarget(dyn_cast<CallInst>(prev));
         if (target && target->doesNotReturn())
           return false;
       }
@@ -196,7 +196,9 @@ StatsTracker::StatsTracker(Executor &_executor, std::string _objectFilename,
       error_code ec = sys::fs::exists(current.str(), exists);
       if (ec == errc::success && exists) {
 #else
-      if (!sys::fs::exists(current.str(), exists)) {
+      if (!sys::fs::exists(current.str()
+//, exists
+)) {
 #endif
         objectFilename = current.c_str();
       }

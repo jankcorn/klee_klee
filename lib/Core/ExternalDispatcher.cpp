@@ -23,7 +23,7 @@
 #include "llvm/Instructions.h"
 #include "llvm/LLVMContext.h"
 #endif
-#include "llvm/ExecutionEngine/JIT.h"
+#include "llvm/ExecutionEngine/MCJIT.h"
 #include "llvm/ExecutionEngine/GenericValue.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/raw_ostream.h"
@@ -89,7 +89,15 @@ ExternalDispatcher::ExternalDispatcher() {
   dispatchModule = new Module("ExternalDispatcher", getGlobalContext());
 
   std::string error;
-  executionEngine = ExecutionEngine::createJIT(dispatchModule, &error);
+  //executionEngine = ExecutionEngine::createJIT(dispatchModule, &error);
+    EngineBuilder builder((std::unique_ptr<Module>(dispatchModule)));
+    //builder.setMArch(MArch);
+    builder.setMCPU("");
+    //builder.setMAttrs(MAttrs);
+    builder.setErrorStr(&error);
+    //builder.setEngineKind(EngineKind::Interpreter);
+    builder.setOptLevel(CodeGenOpt::None);
+    executionEngine = builder.create();
   if (!executionEngine) {
     llvm::errs() << "unable to make jit: " << error << "\n";
     abort();
@@ -146,7 +154,8 @@ bool ExternalDispatcher::executeCall(Function *f, Instruction *i, uint64_t *args
       // ensures that any errors or assertions in the compilation process will
       // trigger crashes instead of being caught as aborts in the external
       // function.
-      executionEngine->recompileAndRelinkFunction(dispatcher);
+      //executionEngine->recompileAndRelinkFunction(dispatcher);
+printf("[%s:%d]\n", __FUNCTION__, __LINE__);
     }
   } else {
     dispatcher = it->second;
@@ -237,7 +246,7 @@ Function *ExternalDispatcher::createDispatcher(Function *target, Instruction *in
     LLVM_TYPE_Q Type *argTy = (i < FTy->getNumParams() ? FTy->getParamType(i) : 
                                (*ai)->getType());
     Instruction *argI64p = 
-      GetElementPtrInst::Create(argI64s, 
+      GetElementPtrInst::Create(argI64s->getType(), argI64s, 
                                 ConstantInt::get(Type::getInt32Ty(getGlobalContext()), 
                                                  idx), 
                                 "", dBB);

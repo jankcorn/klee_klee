@@ -106,11 +106,11 @@ bool IntrinsicCleanerPass::runOnBasicBlock(BasicBlock &b, Module &M) {
           Value *pSrc = CastInst::CreatePointerCast(src, i64p, "vacopy.cast.src", ii);
           Value *val = new LoadInst(pSrc, std::string(), ii); new StoreInst(val, pDst, ii);
           Value *off = ConstantInt::get(Type::getInt64Ty(getGlobalContext()), 1);
-          pDst = GetElementPtrInst::Create(pDst, off, std::string(), ii);
-          pSrc = GetElementPtrInst::Create(pSrc, off, std::string(), ii);
+          pDst = GetElementPtrInst::Create(pDst->getType(), pDst, off, std::string(), ii);
+          pSrc = GetElementPtrInst::Create(pSrc->getType(), pSrc, off, std::string(), ii);
           val = new LoadInst(pSrc, std::string(), ii); new StoreInst(val, pDst, ii);
-          pDst = GetElementPtrInst::Create(pDst, off, std::string(), ii);
-          pSrc = GetElementPtrInst::Create(pSrc, off, std::string(), ii);
+          pDst = GetElementPtrInst::Create(pDst->getType(), pDst, off, std::string(), ii);
+          pSrc = GetElementPtrInst::Create(pSrc->getType(), pSrc, off, std::string(), ii);
           val = new LoadInst(pSrc, std::string(), ii); new StoreInst(val, pDst, ii);
         }
         ii->removeFromParent();

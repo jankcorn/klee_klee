@@ -16,7 +16,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "klee/Config/Version.h"
-#include "llvm/PassManager.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Analysis/Passes.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Support/CommandLine.h"
@@ -80,7 +80,7 @@ static cl::alias A1("S", cl::desc("Alias for --strip-debug"),
 
 // A utility function that adds a pass to the pass manager but will also add
 // a verifier pass after if we're supposed to verify.
-static inline void addPass(PassManager &PM, Pass *P) {
+static inline void addPass(legacy::PassManager &PM, Pass *P) {
   // Add the pass to the pass manager...
   PM.add(P);
 
@@ -92,7 +92,7 @@ static inline void addPass(PassManager &PM, Pass *P) {
 namespace llvm {
 
 
-static void AddStandardCompilePasses(PassManager &PM) {
+static void AddStandardCompilePasses(legacy::PassManager &PM) {
   PM.add(createVerifierPass());                  // Verify that input is correct
 
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 0)
@@ -166,7 +166,7 @@ static void AddStandardCompilePasses(PassManager &PM) {
 void Optimize(Module* M) {
 
   // Instantiate the pass manager to organize the passes.
-  PassManager Passes;
+  legacy::PassManager Passes;
 
   // If we're verifying, start off with a verification pass.
   if (VerifyEach)
@@ -178,7 +178,7 @@ void Optimize(Module* M) {
 #elif LLVM_VERSION_CODE < LLVM_VERSION(3, 5)
   // Add an appropriate DataLayout instance for this module...
   addPass(Passes, new DataLayout(M));
-#else
+#elif LLVM_VERSION_CODE < LLVM_VERSION(3, 7)
   // Add an appropriate DataLayout instance for this module...
   addPass(Passes, new DataLayoutPass(M));
 #endif

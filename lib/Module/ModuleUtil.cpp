@@ -56,6 +56,7 @@
 #else
 #include "llvm/IR/CallSite.h"
 #endif
+#include "llvm-c/Linker.h"
 
 #include <map>
 #include <set>
@@ -66,6 +67,7 @@
 using namespace llvm;
 using namespace klee;
 
+#if 0 //jca
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
 /// Based on GetAllUndefinedSymbols() from LLVM3.2
 ///
@@ -217,9 +219,9 @@ static bool linkBCA(object::Archive* archive, Module* composite, std::string& er
   {
 
     StringRef memberName;
-    error_code ec = AI->getName(memberName);
+    std::error_code ec = AI->getName(memberName);
 
-    if ( ec == errc::success )
+    if ( ec == std::errc::success )
     {
       KLEE_DEBUG_WITH_TYPE("klee_linker", dbgs() << "Loading archive member " << memberName << "\n");
     }
@@ -229,16 +231,16 @@ static bool linkBCA(object::Archive* archive, Module* composite, std::string& er
       return false;
     }
 
-    OwningPtr<object::Binary> child;
+    std::unique_ptr<object::Binary> child;
     ec = AI->getAsBinary(child);
     if (ec != object::object_error::success)
     {
       // If we can't open as a binary object file its hopefully a bitcode file
 
-      OwningPtr<MemoryBuffer> buff; // Once this is destroyed will Module still be valid??
+      std::unique_ptr<MemoryBuffer> buff; // Once this is destroyed will Module still be valid??
       Module *Result = 0;
 
-      if (error_code ec = AI->getMemoryBuffer(buff))
+      if (std::error_code ec = AI->getMemoryBuffer(buff))
       {
         SS << "Failed to get MemoryBuffer: " <<ec.message();
         SS.flush();
@@ -248,7 +250,7 @@ static bool linkBCA(object::Archive* archive, Module* composite, std::string& er
       if (buff)
       {
         // FIXME: Maybe load bitcode file lazily? Then if we need to link, materialise the module
-        Result = ParseBitcodeFile(buff.get(), getGlobalContext(), &errorMessage);
+        Result = parseBitcodeFile(buff.get(), getGlobalContext(), &errorMessage);
 
         if(!Result)
         {
@@ -317,7 +319,7 @@ static bool linkBCA(object::Archive* archive, Module* composite, std::string& er
               " in " << M->getModuleIdentifier() << "\n");
 
 
-          if (Linker::LinkModules(composite, M, Linker::DestroySource, &errorMessage))
+          if (Linker::LinkModules(composite, M, Linker::LLVMLinkerDestroySource, &errorMessage))
           {
             // Linking failed
             SS << "Linking archive module with composite failed:" << errorMessage;
@@ -359,6 +361,7 @@ static bool linkBCA(object::Archive* archive, Module* composite, std::string& er
 
 }
 #endif
+#endif //jca
 
 
 Module *klee::linkWithLibrary(Module *module, 
@@ -370,32 +373,31 @@ Module *klee::linkWithLibrary(Module *module,
         libraryName.c_str());
   }
 
-  OwningPtr<MemoryBuffer> Buffer;
-  if (error_code ec = MemoryBuffer::getFile(libraryName,Buffer)) {
+  ErrorOr<std::unique_ptr<MemoryBuffer>> Buffer = MemoryBuffer::getFile(libraryName);
+  if (std::error_code ec = Buffer.getError()) {
     klee_error("Link with library %s failed: %s", libraryName.c_str(),
         ec.message().c_str());
   }
 
-  sys::fs::file_magic magic = sys::fs::identify_magic(Buffer->getBuffer());
+  sys::fs::file_magic magic = sys::fs::identify_magic(Buffer->get()->getBuffer());
 
   LLVMContext &Context = getGlobalContext();
   std::string ErrorMessage;
 
   if (magic == sys::fs::file_magic::bitcode) {
-    Module *Result = 0;
-    Result = ParseBitcodeFile(Buffer.get(), Context, &ErrorMessage);
+    //Module *Result = 0;
+    ErrorOr<std::unique_ptr<Module>> Result = parseBitcodeFile(Buffer.get()->getMemBufferRef(), Context);
 
-
-    if (!Result || Linker::LinkModules(module, Result, Linker::DestroySource,
-        &ErrorMessage))
+    if (!Result || Linker::LinkModules(module, &*Result.get()))
       klee_error("Link with library %s failed: %s", libraryName.c_str(),
           ErrorMessage.c_str());
 
-    delete Result;
+    //delete Result;
 
   } else if (magic == sys::fs::file_magic::archive) {
-    OwningPtr<object::Binary> arch;
-    if (error_code ec = object::createBinary(Buffer.take(), arch))
+#if 0
+    std::unique_ptr<object::Binary> arch;
+    if (std::error_code ec = object::createBinary(Buffer.take(), arch))
       klee_error("Link with library %s failed: %s", libraryName.c_str(),
           ec.message().c_str());
 
@@ -408,9 +410,12 @@ Module *klee::linkWithLibrary(Module *module,
     else {
     	klee_error("Link with library %s failed: Cast to archive failed", libraryName.c_str());
     }
+#endif
+printf("[%s:%d]\n", __FUNCTION__, __LINE__);
+exit(-1);
 
   } else if (magic.is_object()) {
-    OwningPtr<object::Binary> obj;
+    std::unique_ptr<object::Binary> obj;
     if (object::ObjectFile *o = dyn_cast<object::ObjectFile>(obj.get())) {
       klee_warning("Link with library: Object file %s in archive %s found. "
           "Currently not supported.",

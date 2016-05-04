@@ -132,8 +132,8 @@ inline uint64_t mod(uint64_t l, uint64_t r, unsigned inWidth) {
 // determine if l represents NaN
 inline bool isNaN(uint64_t l, unsigned inWidth) {
   switch( inWidth ) {
-  case FLT_BITS: return llvm::IsNAN( UInt64AsFloat(l) );
-  case DBL_BITS: return llvm::IsNAN( UInt64AsDouble(l) );
+  case FLT_BITS: return isnan( UInt64AsFloat(l) );
+  case DBL_BITS: return isnan( UInt64AsDouble(l) );
   default: llvm::report_fatal_error("unsupported floating point width");
   }
 }

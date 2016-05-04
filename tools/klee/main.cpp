@@ -46,6 +46,7 @@
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Path.h"
 
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 0)
 #include "llvm/Target/TargetSelect.h"
@@ -383,8 +384,11 @@ std::string KleeHandler::getOutputFilename(const std::string &filename) {
 llvm::raw_fd_ostream *KleeHandler::openOutputFile(const std::string &filename) {
   llvm::raw_fd_ostream *f;
   std::string Error;
+  std::error_code ErrorCode;
   std::string path = getOutputFilename(filename);
-#if LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3,7)
+  f = new llvm::raw_fd_ostream(path.c_str(), ErrorCode, sys::fs::OpenFlags::F_None);
+#elif LLVM_VERSION_CODE >= LLVM_VERSION(3,5)
   f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_None);
 #elif LLVM_VERSION_CODE >= LLVM_VERSION(3,4)
   f = new llvm::raw_fd_ostream(path.c_str(), Error, llvm::sys::fs::F_Binary);
@@ -1227,6 +1231,7 @@ int main(int argc, char **argv, char **envp) {
   // Load the bytecode...
   std::string ErrorMsg;
   Module *mainModule = 0;
+  std::unique_ptr<Module> mainModuleU = 0;
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 5)
   OwningPtr<MemoryBuffer> BufferPtr;
   error_code ec=MemoryBuffer::getFileOrSTDIN(InputFile.c_str(), BufferPtr);
@@ -1247,16 +1252,18 @@ int main(int argc, char **argv, char **envp) {
     klee_error("error loading program '%s': %s", InputFile.c_str(),
                ErrorMsg.c_str());
 #else
-  auto Buffer = MemoryBuffer::getFileOrSTDIN(InputFile.c_str());
-  if (!Buffer)
+  ErrorOr<std::unique_ptr<MemoryBuffer>> Buffer = MemoryBuffer::getFileOrSTDIN(InputFile);
+  //auto Buffer = MemoryBuffer::getFileOrSTDIN(InputFile.c_str());
+  if (std::error_code EC = Buffer.getError())
     klee_error("error loading program '%s': %s", InputFile.c_str(),
-               Buffer.getError().message().c_str());
+               EC.message().c_str());
 
-  auto mainModuleOrError = getLazyBitcodeModule(Buffer->get(), getGlobalContext());
+  auto mainModuleOrError = getLazyBitcodeModule(std::move(Buffer.get())
+, getGlobalContext());
 
-  if (!mainModuleOrError) {
+  if (std::error_code EC = mainModuleOrError.getError()) {
     klee_error("error loading program '%s': %s", InputFile.c_str(),
-               mainModuleOrError.getError().message().c_str());
+               EC.message().c_str());
   }
   else {
     // The module has taken ownership of the MemoryBuffer so release it
@@ -1264,7 +1271,9 @@ int main(int argc, char **argv, char **envp) {
     Buffer->release();
   }
 
-  mainModule = *mainModuleOrError;
+  //mainModule = *mainModuleOrError;
+  mainModuleU = std::move(mainModuleOrError.get());
+  mainModule = mainModuleU.get();
   if (auto ec = mainModule->materializeAllPermanently()) {
     klee_error("error loading program '%s': %s", InputFile.c_str(),
                ec.message().c_str());

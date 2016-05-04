@@ -1336,7 +1336,7 @@ Function* Executor::getTargetFunction(Value *calledVal, ExecutionState &state) {
 
   while (true) {
     if (GlobalValue *gv = dyn_cast<GlobalValue>(c)) {
-      if (!Visited.insert(gv))
+      if (!Visited.insert(gv).second)
         return 0;
 
       std::string alias = state.getFnAlias(gv->getName());

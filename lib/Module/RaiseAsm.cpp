@@ -79,7 +79,8 @@ bool RaiseAsmPass::runOnModule(Module &M) {
 #else
     TM = NativeTarget->createTargetMachine(HostTriple, "");
 #endif
-    TLI = TM->getTargetLowering();
+printf("[%s:%d] NOLOWERING\n", __FUNCTION__, __LINE__);
+    //TLI = TM->getTargetLowering();
   }
   
   for (Module::iterator fi = M.begin(), fe = M.end(); fi != fe; ++fi) {

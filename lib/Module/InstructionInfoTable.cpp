@@ -103,9 +103,10 @@ bool InstructionInfoTable::getInstructionDebugInfo(const llvm::Instruction *I,
                                                    const std::string *&File,
                                                    unsigned &Line) {
   if (MDNode *N = I->getMetadata("dbg")) {
-    DILocation Loc(N);
-    File = internString(getDSPIPath(Loc));
-    Line = Loc.getLineNumber();
+static std::string bozo = "FFFFFILENAME";
+    //DILocation Loc(N);
+    File = &bozo; //internString(getDSPIPath(Loc));
+    Line = 666; //Loc.getLineNumber();
     return true;
   }
 

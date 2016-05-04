@@ -27,7 +27,7 @@ QueryLoggingSolver::QueryLoggingSolver(Solver *_solver, std::string path,
                                        int queryTimeToLog)
     : solver(_solver),
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 5)
-      os(path.c_str(), ErrorInfo, llvm::sys::fs::OpenFlags::F_Text),
+      os(path.c_str(), ErrorInfoCode, llvm::sys::fs::OpenFlags::F_Text),
 #else
       os(path.c_str(), ErrorInfo),
 #endif
