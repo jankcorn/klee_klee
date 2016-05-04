@@ -1,7 +1,7 @@
 #
 set -e
 set -x
-#git checkout remotes/origin/master -b atomicc1
+#git checkout remotes/origin/atomicc1 -b atomicc1
 
 CC=clang CXX=clang++ ./configure --with-stp=`pwd`/../stp/build \
   --with-llvmsrc=`pwd`/../llvm \
